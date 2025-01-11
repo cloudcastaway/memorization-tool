@@ -1,22 +1,48 @@
-class Flashcards:
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+
+Base = declarative_base()
+
+class Flashcard(Base):
+    __tablename__ = "flashcard"
+
+    id = Column(Integer, primary_key=True)
+    question = Column(String(300), nullable=False)
+    answer = Column(String(300), nullable=False)
+
+
+class FlashcardApp:
     def __init__(self):
-        self.flashcards = {}
+        address = "sqlite:///flashcard.db?check_same_thread=False"
+        self.engine = create_engine(address)
+        Base.metadata.create_all(self.engine)
+
+        Session = sessionmaker(bind=self.engine)
+        self.session = Session()
+
+
+
 
     def main_menu(self):
-        while True:
+        try:
             while True:
-                print("\n1. Add flashcards\n2. Practice flashcards\n3. Exit")
-                choice = input()
-                if choice in ("1", "2", "3"):
-                    break
-                print(f"\n{choice} is not an option\n")
-            if choice == "1":
-                self.sub_menu()
-            elif choice == "2":
-                self.practice_flashcards()
-            else:
-                print("Bye!")
-                return
+                while True:
+                    print("\n1. Add flashcards\n2. Practice flashcards\n3. Exit")
+                    choice = input()
+                    if choice in ("1", "2", "3"):
+                        break
+                    print(f"\n{choice} is not an option\n")
+                if choice == "1":
+                    self.sub_menu()
+                elif choice == "2":
+                    self.practice_flashcards()
+                else:
+                    print("Bye!")
+                    return
+        finally:
+            self.session.close()
 
 
     def sub_menu(self):
@@ -43,22 +69,26 @@ class Flashcards:
         while answer == "":
             answer = input("Answer:\n").strip()
 
-        self.flashcards[question] = answer
+        new_flashcard = Flashcard(question = question, answer = answer)
+        self.session.add(new_flashcard)
+        self.session.commit()
 
 
     def practice_flashcards(self):
-        if not self.flashcards:
+        row_exists = self.session.query(Flashcard).first()
+        if not row_exists:
             print("There is no flashcard to practice!")
             return
 
-        for question, answer in self.flashcards.items():
-            print(f"\nQuestion: {question}")
+        rows = self.session.query(Flashcard).all()
+        for row in rows:
+            print(f"\nQuestion: {row.question}")
             choice = ""
             while choice not in ("y", "n"):
                 print("Please press \"y\" to see the answer or press \"n\" to skip:")
                 choice = input().lower()
             if choice == "y":
-                print(f"\nAnswer: {answer}")
+                print(f"\nAnswer: {row.answer}")
 
 
-Flashcards().main_menu()
+FlashcardApp().main_menu()
