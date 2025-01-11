@@ -23,8 +23,6 @@ class FlashcardApp:
         self.session = Session()
 
 
-
-
     def main_menu(self):
         try:
             while True:
@@ -84,11 +82,46 @@ class FlashcardApp:
         for row in rows:
             print(f"\nQuestion: {row.question}")
             choice = ""
-            while choice not in ("y", "n"):
-                print("Please press \"y\" to see the answer or press \"n\" to skip:")
+            while choice not in ("y", "n", "u"):
+                print("press \"y\" to see the answer:\npress \"n\" to skip:\npress \"u\" to update:")
                 choice = input().lower()
             if choice == "y":
                 print(f"\nAnswer: {row.answer}")
+            elif choice == "u":
+                self.update_menu(row.question, row.answer)
+
+
+    def update_menu(self, question, answer):
+        choice = ""
+        while choice not in ("d", "e"):
+            print("press \"d\" to delete the flashcard:\npress \"e\" to edit the flashcard:")
+            choice = input().lower()
+        if choice == "d":
+            self.delete_flashcard(question)
+        else:
+            self.edit_flashcard(question, answer)
+
+
+    def delete_flashcard(self, question):
+        row = self.session.query(Flashcard).filter_by(question=question).first()
+        self.session.delete(row)
+        self.session.commit()
+
+
+    def edit_flashcard(self, question, answer):
+        print(f"current question: {question}\nplease write a new question:")
+        new_question = input().strip()
+        print(f"\ncurrent answer: {answer}\nplease write a new answer:")
+        new_answer = input().strip()
+
+        row = self.session.query(Flashcard).filter_by(question=question).first()
+
+        if new_question != "":
+            row.question = new_question
+        if new_answer != "":
+            row.answer = new_answer
+
+        self.session.commit()
 
 
 FlashcardApp().main_menu()
