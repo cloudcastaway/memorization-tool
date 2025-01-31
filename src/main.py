@@ -11,6 +11,7 @@ class Flashcard(Base):
     id = Column(Integer, primary_key=True)
     question = Column(String(300), nullable=False)
     answer = Column(String(300), nullable=False)
+    difficulty = Column(Integer, nullable=False)
 
 
 class FlashcardApp:
@@ -67,7 +68,7 @@ class FlashcardApp:
         while answer == "":
             answer = input("Answer:\n").strip()
 
-        new_flashcard = Flashcard(question = question, answer = answer)
+        new_flashcard = Flashcard(question = question, answer = answer, difficulty = 1)
         self.session.add(new_flashcard)
         self.session.commit()
 
@@ -78,17 +79,41 @@ class FlashcardApp:
             print("There is no flashcard to practice!")
             return
 
-        rows = self.session.query(Flashcard).all()
+        rows = self.session.query(Flashcard).order_by(Flashcard.difficulty).all()
         for row in rows:
             print(f"\nQuestion: {row.question}")
-            choice = ""
-            while choice not in ("y", "n", "u"):
+            while True:
                 print("press \"y\" to see the answer:\npress \"n\" to skip:\npress \"u\" to update:")
                 choice = input().lower()
+                if choice in ("y", "n", "u"):
+                    break
+                print(f"\n{choice} is not an option\n")
             if choice == "y":
                 print(f"\nAnswer: {row.answer}")
+                self.difficulty_changer(row)
             elif choice == "u":
                 self.update_menu(row.question, row.answer)
+
+
+    def difficulty_changer(self, row):
+        while True:
+            print("press \"y\" if your answer is correct:\npress \"n\" if your answer is wrong:")
+            choice = input().lower()
+            if choice in ("y", "n"):
+                break
+            print(f"\n{choice} is not an option\n")
+
+        if choice == "y":
+            row.difficulty += 1
+        else:
+            row.difficulty = 1
+
+        if row.difficulty > 3:
+            self.session.delete(row)
+        else:
+            self.session.commit()
+
+        self.session.commit()
 
 
     def update_menu(self, question, answer):
